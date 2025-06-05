@@ -6,23 +6,22 @@ blogRouter.get('/', async (request, response) => {
   response.json(blog)
 })
 
-blogRouter.post('/', async (request, response) => {
-  const blog = new Blog(request.body)
-  const savedBlog = await blog.save()
-  response.status(201).json(savedBlog)
-})
-blogRouter.post('/', async (request, response) => {
+blogRouter.post('/', async (request, response, next) => {
   const body = request.body
 
   const blog = new Blog({
     title: body.title,
     author: body.author,
     url: body.url,
-    likes: body.likes || 0 // default to 0 if missing
+    likes: body.likes || 0
   })
 
-  const savedBlog = await blog.save()
-  response.status(201).json(savedBlog)
+  try {
+    const savedBlog = await blog.save()
+    response.status(201).json(savedBlog)
+  } catch (error) {
+    next(error)  // Important: passes ValidationError to middleware
+  }
 })
 
 module.exports = blogRouter
