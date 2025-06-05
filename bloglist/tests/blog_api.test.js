@@ -74,19 +74,38 @@ test('a valid blog can be added' , async () =>{
     expect(titles).toContain(newBlog.title)
     })
 
+test('if the likes are missing then default to 0', async () => {
+  const newBlog = {
+    title: "no one likes this",
+    author: "kafka",
+    url: "http://example.com/no-one-likes-this"
+    // likes is intentionally omitted
+  }
 
+  const response = await api
+    .post('/api/blog')
+    .send(newBlog)  // Send the object, not a string
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
 
+  expect(response.body.likes).toBe(0)  // Separate expect
+})
 
+test('if the url is missing then return 400', async () => {
+  const newBlog = {
+    title: "Missing URL",
+    author: "Test Author",
+    likes: 5
+  }
 
+  const response = await api
+    .post('/api/blog')
+    .send(newBlog)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
 
-
-
-
-
-
-
-
-
+  expect(response.body.error).toContain('url') // Assuming your error middleware returns this
+})
 
 
 afterAll(async () => {
