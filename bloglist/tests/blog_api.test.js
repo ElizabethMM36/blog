@@ -55,7 +55,24 @@ test('blog post unique identifier is named id', async () => {
   expect(response.body[0]._id).toBeUndefined()
 })
 
-
+test('a valid blog can be added' , async () =>{
+    const newBlog ={
+        title: "AI scary",
+        author: "ali",
+        url: "http://example.com/ai-scary",
+        likes: 15
+    }
+    const blogsAtStart = await api.get('/api/blog')
+    await api
+        .post('/api/blog')
+        .send(newBlog)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+    const blogsAtEnd = await api.get('/api/blog')
+    expect(blogsAtEnd.body).toHaveLength(blogsAtStart.body.length + 1)
+    const titles = blogsAtEnd.body.map(blog => blog.title)      
+    expect(titles).toContain(newBlog.title)
+    })
 
 
 
