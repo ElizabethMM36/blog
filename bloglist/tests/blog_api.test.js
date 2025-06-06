@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
+const blog = require('../models/blog')
 const api = supertest(app)
 
 const initialBlogs = [
@@ -121,7 +122,17 @@ test('a blog is deleted successfully', async () => {
   const titles = blogsAtEnd.body.map(blog => blog.title)
   expect(titles).not.toContain(blogToDelete.title)
 })
-
+test('a blog can be updated sucessfully', async() => {
+  const blogsAtStart = await api.get('/api/blog')
+  const blogtoupdate = blogsAtStart.body[0]
+  const updatedblog ={...blogtoupdate, likes:blogtoupdate.likes + 1}
+  const response = await api
+    .put(`/api/blog/${blogtoupdate.id}`)
+    .send(updatedblog)
+    .expect(200)
+    .expect('Content-Type',/application\/json/)
+  expect(response.body.likes).toBe(blogtoupdate.likes + 1)
+})
 
 afterAll(async () => {
   await mongoose.connection.close()
