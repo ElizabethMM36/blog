@@ -107,6 +107,21 @@ test('if the url is missing then return 400', async () => {
   expect(response.body.error).toContain('url') // Assuming your error middleware returns this
 })
 
+test('a blog is deleted successfully', async () => {
+  const blogsAtStart = await api.get('/api/blog')
+  const blogToDelete = blogsAtStart.body[0]
+
+  await api
+    .delete(`/api/blog/${blogToDelete.id}`)
+    .expect(204)
+
+  const blogsAtEnd = await api.get('/api/blog')
+  expect(blogsAtEnd.body).toHaveLength(blogsAtStart.body.length - 1)
+
+  const titles = blogsAtEnd.body.map(blog => blog.title)
+  expect(titles).not.toContain(blogToDelete.title)
+})
+
 
 afterAll(async () => {
   await mongoose.connection.close()
