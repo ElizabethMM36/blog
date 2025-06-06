@@ -4,6 +4,8 @@ const mongoose = require('mongoose')
 const config = require('./utils/config')
 const logger = require('./utils/logger')
 const blogRouter = require('./controllers/blogs')
+const loginRouter = require('./controllers/login')
+const usersRouter = require('./controllers/users')
 
 const app = express()
 
@@ -17,7 +19,10 @@ mongoose.connect(config.MONGODB_URI)
   
 
 
+
 app.use(express.json())
+app.use('/api/login', loginRouter)
+app.use('/api/users', usersRouter)
 app.use('/api/blog', blogRouter)
 app.use((error, request, response, next) => {
   if (error.name === 'ValidationError') {
