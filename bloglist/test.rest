@@ -6,3 +6,16 @@ Content-Type: application/json
   "username": "uniqueuser",
   "password": "password123"
 }
+
+### Create blog with token
+POST http://localhost:3003/api/blog
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVuaXF1ZXVzZXIiLCJpZCI6IjY4NDU4YWU0MGQ0ZTA5ZjE5YTY3YzMzMyIsImlhdCI6MTc0OTQwODY1Mn0.WOG2YwWsodzHbojTAyoVkBwHn9GQWm2gp4VH7Ode-cI
+
+{
+   
+  "title": "Protected Blog",
+  "author": "AuthUser",
+  "url": "https://example.com",
+  "likes": 5
+}
