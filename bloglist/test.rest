@@ -1,16 +1,4 @@
 ### Get all blogs
-GET http://localhost:3003/api/blogs
-Content-Type: application/json
 
-###
-
-### Create a new blog
-POST http://localhost:3003/api/blogs
-Content-Type: application/json
-
-{
-  "title": "My REST Client Blog",
-  "author": "Silvy",
-  "url": "https://restclient.example.com",
-  "likes": 15
-}
+# Get all blogs with user info populated
+GET http://localhost:3003/api/blog
