@@ -1,7 +1,7 @@
 const blogRouter = require('express').Router()
 const Blog = require('../models/blog')
 const User = require('../models/user')
-
+const tokenExtractor = require('../middleware/tokenExtractor')
 
 blogRouter.get('/', async (req, res) => {
   try {
@@ -14,9 +14,9 @@ blogRouter.get('/', async (req, res) => {
 })
 
 
-blogRouter.post('/', async (request, response, next) => {
+blogRouter.post('/', tokenExtractor,async (request, response, next) => {
   const body = request.body
-  const user = await User.findOne({})
+  const user = await User.findById(request.user.id)
 
   const blog = new Blog({
     title: body.title,
@@ -36,7 +36,7 @@ blogRouter.post('/', async (request, response, next) => {
   }
 })
 
-blogRouter.delete('/:id', async(request,response,next) => {
+blogRouter.delete('/:id', tokenExtractor,async(request,response,next) => {
   try{
     const deleted = await Blog.findByIdAndDelete(request.params.id)
     if(deleted){
@@ -63,6 +63,23 @@ blogRouter.delete('/:id', async(request,response,next) => {
       next(error)
     }
   })
+blogRouter.delete('/:id', tokenExtractor, async (request, response, next) => {
+  try {
+    const blog = await Blog.findById(request.params.id)
+    if (!blog) {
+      return response.status(404).json({ error: 'Blog not found' })
+    }
 
+    // Check if the blog's user matches the token's user
+    if (blog.user.toString() !== request.user.id) {
+      return response.status(403).json({ error: 'Access denied: not blog owner' })
+    }
+
+    await Blog.findByIdAndDelete(request.params.id)
+    response.status(204).end()
+  } catch (error) {
+    next(error)
+  }
+})
 
 module.exports = blogRouter
