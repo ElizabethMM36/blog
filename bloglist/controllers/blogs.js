@@ -1,9 +1,9 @@
-const jwt = require('jsonwebtoken')
 const blogRouter = require('express').Router()
 const Blog = require('../models/blog')
 const User = require('../models/user')
-const tokenExtractor = require('../middleware/tokenExtractor')
+const userExtractor = require('../middleware/userExtractor')
 
+// Get all blogs (no auth required)
 blogRouter.get('/', async (req, res) => {
   try {
     const blogs = await Blog.find({}).populate('user', { username: 1, name: 1 })
@@ -14,23 +14,10 @@ blogRouter.get('/', async (req, res) => {
   }
 })
 
-
-blogRouter.post('/', async (request, response, next) => {
+// Create a new blog (auth required)
+blogRouter.post('/', userExtractor, async (request, response, next) => {
   const body = request.body
-  const token = request.token
-
-  let decodedToken
-  try {
-    decodedToken = jwt.verify(token, process.env.SECRET)
-  } catch (error) {
-    return response.status(401).json({ error: 'token missing or invalid' })
-  }
-
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: 'token missing or invalid' })
-  }
-
-  const user = await User.findById(decodedToken.id)
+  const user = request.user
 
   const blog = new Blog({
     title: body.title,
@@ -51,32 +38,35 @@ blogRouter.post('/', async (request, response, next) => {
   }
 })
 
-
-  blogRouter.put('/:id',async(request,response,next) => {
-    
-    
-    try{
-      const { title, author, url, likes } = request.body
-
-      const result = await Blog.findByIdAndUpdate(request.params.id,{ title, author, url, likes },{new: true, context: 'query'})
-    if(result){
+// Update a blog
+blogRouter.put('/:id', async (request, response, next) => {
+  try {
+    const { title, author, url, likes } = request.body
+    const result = await Blog.findByIdAndUpdate(
+      request.params.id,
+      { title, author, url, likes },
+      { new: true, context: 'query' }
+    )
+    if (result) {
       response.json(result)
-    } else{
-      response.status(404).json({ error:'Blog not found' })
+    } else {
+      response.status(404).json({ error: 'Blog not found' })
     }
-    }catch(error){
-      next(error)
-    }
-  })
-blogRouter.delete('/:id', tokenExtractor, async (request, response, next) => {
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Delete a blog (auth required)
+blogRouter.delete('/:id', userExtractor, async (request, response, next) => {
   try {
     const blog = await Blog.findById(request.params.id)
     if (!blog) {
       return response.status(404).json({ error: 'Blog not found' })
     }
 
-    // Check if the blog's user matches the token's user
-    if (blog.user.toString() !== request.user.id) {
+    // Check if the blog's user matches the logged-in user
+    if (blog.user.toString() !== request.user._id.toString()) {
       return response.status(403).json({ error: 'Access denied: not blog owner' })
     }
 

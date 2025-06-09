@@ -1,36 +1,49 @@
-const jwt =require('jsonwebtoken')
+const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const loginRouter = require('express').Router()
 const User = require('../models/user')
 const config = require('../utils/config')
 
+loginRouter.post('/', async (request, response) => {
+  const { username, password } = request.body
 
-loginRouter.post('/',async (request,response) =>{
-    const {username,password} = request.body
-    const user = await User.findOne({username})
-    const passwordCorrect = user ===null ? false :
-    await bcrypt.compare(password,user.passwordHash)
+  console.log('LOGIN ATTEMPT FOR:', username)
 
-    if(!(user && passwordCorrect)){
-        return response.status(401).json({
-            error: 'invalid username or password'
-        })
+  try {
+    const user = await User.findOne({ username })
+
+    if (!user) {
+      console.log('User not found')
+      return response.status(401).json({ error: 'invalid username or password' })
     }
 
-    const userForToken ={
-        username: user.username,
-        id: user._id,
+    const passwordCorrect = await bcrypt.compare(password, user.passwordHash)
+
+    if (!passwordCorrect) {
+      console.log('Incorrect password')
+      return response.status(401).json({ error: 'invalid username or password' })
     }
- const token = jwt.sign(
-  { username: user.username, id: user._id },
-  config.SECRET
-)
-     response
-        .status(200)
-        .send({token,username: user.username, name:user.name})
+
+    const userForToken = {
+      username: user.username,
+      id: user._id,
+    }
+
+    console.log('SECRET used to sign token:', config.SECRET)
+
+    const token = jwt.sign(userForToken, config.SECRET, { expiresIn: '1h' })
+
+    console.log('Generated token:', token)
+
+    response.status(200).send({
+      token,
+      username: user.username,
+      name: user.name,
     })
-     
-
-
+  } catch (error) {
+    console.error('Login error:', error.message)
+    response.status(500).json({ error: 'Internal server error' })
+  }
+})
 
 module.exports = loginRouter
