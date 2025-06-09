@@ -6,7 +6,7 @@ const logger = require('./utils/logger')
 const blogRouter = require('./controllers/blogs')
 const loginRouter = require('./controllers/login')
 const usersRouter = require('./controllers/users')
-
+const tokenExtractor = require('./middleware/tokenExtractor')
 const app = express()
 
 mongoose.connect(config.MONGODB_URI)
@@ -21,9 +21,14 @@ mongoose.connect(config.MONGODB_URI)
 
 
 app.use(express.json())
-app.use('/api/login', loginRouter)
+
+
+app.use(tokenExtractor)
+app.use('/api/blog',tokenExtractor, blogRouter)
 app.use('/api/users', usersRouter)
-app.use('/api/blog', blogRouter)
+
+app.use('/api/login', loginRouter)
+
 app.use((error, request, response, next) => {
   if (error.name === 'ValidationError') {
     return response.status(400).json({ error: error.message })

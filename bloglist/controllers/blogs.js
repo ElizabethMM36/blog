@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken')
 const blogRouter = require('express').Router()
 const Blog = require('../models/blog')
 const User = require('../models/user')
@@ -14,39 +15,43 @@ blogRouter.get('/', async (req, res) => {
 })
 
 
-blogRouter.post('/', tokenExtractor,async (request, response, next) => {
+blogRouter.post('/', async (request, response, next) => {
   const body = request.body
-  const user = await User.findById(request.user.id)
+  const token = request.token
+
+  let decodedToken
+  try {
+    decodedToken = jwt.verify(token, process.env.SECRET)
+  } catch (error) {
+    return response.status(401).json({ error: 'token missing or invalid' })
+  }
+
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'token missing or invalid' })
+  }
+
+  const user = await User.findById(decodedToken.id)
 
   const blog = new Blog({
     title: body.title,
     author: body.author,
     url: body.url,
     likes: body.likes || 0,
-    user: user._id // Assuming you want to associate the first user with the blog
+    user: user._id,
   })
 
   try {
     const savedBlog = await blog.save()
-  user.blogs = user.blogs.concat(savedBlog._id)
-  await user.save()
+    user.blogs = user.blogs.concat(savedBlog._id)
+    await user.save()
+
     response.status(201).json(savedBlog)
   } catch (error) {
-    next(error)  // Important: passes ValidationError to middleware
+    next(error)
   }
 })
 
-blogRouter.delete('/:id', tokenExtractor,async(request,response,next) => {
-  try{
-    const deleted = await Blog.findByIdAndDelete(request.params.id)
-    if(deleted){
-      response.status(204).end()
-    }else{
-      response.status(404).json({ error: 'Blog not found' })
-    }
-  }catch(error){
-    next(error)}
-  })
+
   blogRouter.put('/:id',async(request,response,next) => {
     
     
