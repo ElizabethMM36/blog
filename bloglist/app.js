@@ -24,7 +24,7 @@ mongoose.connect(config.MONGODB_URI)
 app.use(express.json())
 
 
-app.use(userExtractor)
+app.use(tokenExtractor)
 app.use('/api/blog', blogRouter)
 app.use('/api/users', usersRouter)
 

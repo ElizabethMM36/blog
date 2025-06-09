@@ -31,6 +31,22 @@ const initialBlogs = [
     likes: 10
   }
 ]
+let token = null
+
+beforeAll(async () => {
+  await User.deleteMany({})
+
+  const passwordHash = await bcrypt.hash('sekret', 10)
+  const user = new User({ username: 'testuser', name: 'Test User', passwordHash })
+  await user.save()
+
+  // login to get token
+  const loginResponse = await api
+    .post('/api/login')
+    .send({ username: 'testuser', password: 'sekret' })
+
+  token = loginResponse.body.token
+})
 
 beforeEach(async () => {
   await Blog.deleteMany({})
@@ -132,6 +148,48 @@ test('a blog can be updated sucessfully', async() => {
     .expect(200)
     .expect('Content-Type',/application\/json/)
   expect(response.body.likes).toBe(blogtoupdate.likes + 1)
+})
+
+test('a valid blog can be added with a valid token', async () => {
+  // Login to get the token
+  const loginResponse = await api
+    .post('/api/login')
+    .send({ username: 'testuser', password: 'testpass' })
+
+  const token = loginResponse.body.token
+
+  const newBlog = {
+    title: 'New Blog Post',
+    author: 'Test Author',
+    url: 'http://test.com',
+    likes: 10
+  }
+
+  await api
+    .post('/api/blogs')
+    .set('Authorization', `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVuaXF1ZXVzZXIiLCJpZCI6IjY4NDU4YWU0MGQ0ZTA5ZjE5YTY3YzMzMyIsImlhdCI6MTc0OTQwODY1Mn0.WOG2YwWsodzHbojTAyoVkBwHn9GQWm2gp4VH7Ode-cI`) // ✅ set token
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
+})
+test('adding a blog fails with 401 if token is not provided', async () => {
+  const newBlog = {
+    title: 'Unauthorized blog',
+    author: 'Someone',
+    url: 'http://unauth.com',
+    likes: 1,
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(401)
+
+  const blogs = await Blog.find({})
+  expect(blogs).toHaveLength(0)
 })
 
 afterAll(async () => {
